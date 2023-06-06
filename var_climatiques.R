@@ -1,6 +1,6 @@
 
 #k C:/Users/david.munoz/Downloads/predictors_ebalife
-#ERA5 monthly averaged reanalysis
+#ERA5 monthly averaged reanalysis git config --system http.sslcainfo "C:/Users/david.munoz/Documents/Git/mingw64/etc/ssl/certs/ca-bundle.crt"
 #https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-land-monthly-means?tab=overview
 
 library(ecmwfr)
