@@ -1,5 +1,5 @@
 
-#k
+#k C:/Users/david.munoz/Downloads/predictors_ebalife
 #ERA5 monthly averaged reanalysis
 #https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-land-monthly-means?tab=overview
 
