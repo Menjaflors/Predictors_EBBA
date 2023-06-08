@@ -195,8 +195,12 @@ solar_radiation_EBBA_3<-calc(surface_net_solar_radiation_EBBA3, fun=mean)
 writeRaster(solar_radiation_EBBA_3, "C:/Users/david.munoz/OneDrive - ctfc.cat/predictors_ebalife/plots/solar_radiation_EBBA_3.tif")
 writeRaster(SNWCVR_EBBA3, "C:/Users/david.munoz/OneDrive - ctfc.cat/predictors_ebalife/plots/SNWCVR_EBBA_3.tif")
 writeRaster(TAP_EBBA3, "C:/Users/david.munoz/OneDrive - ctfc.cat/predictors_ebalife/plots/TAP_EBBA_3.tif")
-writeRaster(ETP_EBBA3, "C:/Users/david.munoz/OneDrive - ctfc.cat/predictors_ebalife/plots/ETP_EBBA_3.tif")
+writeRaster(kk, "C:/Users/david.munoz/OneDrive - ctfc.cat/predictors_ebalife/plots/kk.tif")
 writeRaster(MAT_EBBA3, "C:/Users/david.munoz/OneDrive - ctfc.cat/predictors_ebalife/plots/MAT_EBBA_3.tif")
+
+kk<-raster::subset(evaporation_from_vegetation_transpiration_EBBA3, c(1:12)) #select year1
+kk<-calc(kk, fun = function(x) sum(x)*1000) #Maybe we can do a sum here?
+
 
 
 ### Resample, mask in Europe----
