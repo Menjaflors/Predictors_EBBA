@@ -69,10 +69,10 @@ for (i in variable_list) {
 
 ##Evapotranspiration in breeding period (APR-JUL)
 ETP_EBBA2<-raster::subset(evaporation_from_vegetation_transpiration_EBBA2, c(4:7, 16:19, 28:31, 40:43, 52:55)) #select apr-jul from year 1 to 5
-ETP_EBBA2<-calc(ETP_EBBA2, fun = mean) #Maybe we can do a sum here?
+ETP_EBBA2<-calc(ETP_EBBA2, fun = function (x) sum(x)*1000/5) #Maybe we can do a sum here?
 
 ETP_EBBA3<-raster::subset(evaporation_from_vegetation_transpiration_EBBA3, c(4:7, 16:19, 28:31, 40:43, 52:55)) #select apr-jul from year 1 to 5
-ETP_EBBA3<-calc(ETP_EBBA3, fun = mean) #Maybe we can do a sum here?
+ETP_EBBA3<-calc(ETP_EBBA3, fun = function(x) sum(x)*1000/5) #Maybe we can do a sum here?
 
 ##Mean annual temperature
 MAT_EBBA2<-calc(`2m_temperature_EBBA2`, fun=mean)
@@ -191,6 +191,12 @@ solar_radiation_EBBA_2<-calc(surface_net_solar_radiation_EBBA2, fun=mean)
 
 solar_radiation_EBBA_3<-calc(surface_net_solar_radiation_EBBA3, fun=mean)
 
+
+writeRaster(solar_radiation_EBBA_3, "C:/Users/david.munoz/OneDrive - ctfc.cat/predictors_ebalife/plots/solar_radiation_EBBA_3.tif")
+writeRaster(SNWCVR_EBBA3, "C:/Users/david.munoz/OneDrive - ctfc.cat/predictors_ebalife/plots/SNWCVR_EBBA_3.tif")
+writeRaster(TAP_EBBA3, "C:/Users/david.munoz/OneDrive - ctfc.cat/predictors_ebalife/plots/TAP_EBBA_3.tif")
+writeRaster(ETP_EBBA3, "C:/Users/david.munoz/OneDrive - ctfc.cat/predictors_ebalife/plots/ETP_EBBA_3.tif")
+writeRaster(MAT_EBBA3, "C:/Users/david.munoz/OneDrive - ctfc.cat/predictors_ebalife/plots/MAT_EBBA_3.tif")
 
 
 ### Resample, mask in Europe----
