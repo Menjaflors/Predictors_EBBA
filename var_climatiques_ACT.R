@@ -63,7 +63,16 @@ for (i in c(dir_EBBA2, dir_EBBA3)) {
 }
 
 # Climate ----
-## Download data
+## Download data. It comes from https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-land-monthly-means?tab=overview. DM: #It is necessary to have an account in ECMWF. ----
+  
+#DM: Then, download the package ecmwfr, and run the following function:
+  # wf_set_key(user = "david.munoz@ctfc.cat", #put the user
+  #            key = ,
+  #            service = "cds")
+  
+  #DM: Then browser will be opened, put the UID and the API key. To download, copy the code in python in the web
+  #DM: and in RSTUDIO "addins"-> python to list. Maybe you have to remove some characters from dataset_short_name
+  #DM: finally, we obtain for each variable, the values for EBBA2 and EBBA3. Variable name will be the original name+_EBBA2/3
 
 variable_list<-c("2m_temperature", "total_evaporation", "total_precipitation", "surface_net_solar_radiation", "snow_cover", "potential_evaporation") #evaporation_from_vegetation_transpiration  #List of variables to download
 
@@ -113,7 +122,15 @@ for (i in variable_list) {
 }
 
 
-### Modifications of each variable----
+### Modifications of each variable for EBBA 2 and EBBA 3----
+#1: Evapotranspiration
+#2: Annual temperature (K)
+#3: Breeding temperature (K)
+#4: Mean temperature of the warmest month (K)
+#5: Mean temperature of the coldest month (K)
+#6: Annual precipitation (mm)
+#7: Breeding precipitation (mm)
+#8: Surface net solar radiation (J*m-2)
 
 #DM: If you see the following error: Warning: Inside GRIB2Inventory, Message # 61; ERROR: Ran out of file reading SECT0, do not worry. It works properly.
 
@@ -133,8 +150,8 @@ EVAPObree_EBBA2<-ETR/ETP
 EVAPObree_EBBA3<-raster::subset(total_evaporation_EBBA3, c(4:7, 16:19, 28:31, 40:43, 52:55)) #select apr-jul from year 1 to 5
 EVAPObree_EBBA3<-calc(EVAPObree_EBBA3, fun = function(x) sum(x)/5) 
 
-
 writeRaster(ETP, "C:/Users/david.munoz/Downloads/EVAPOPOTENCIAL.tif")
+
 ##Mean annual temperature
 Tannual_EBBA2<-calc(`2m_temperature_EBBA2`, fun=mean)
 
@@ -151,8 +168,8 @@ TBreed_EBBA3<-calc(TBreed_EBBA3, fun=mean)
 
 
 
-##Mean temperature in the warmest month (we found the warmest month at the bottom of the script)
-TMAX_EBBA2<-raster::subset(`2m_temperature_EBBA2`, c(7, 19, 31, 43, 55))
+##Mean temperature in the warmest month
+TMAX_EBBA2<-raster::subset(`2m_temperature_EBBA2`, c(7, 19, 31, 43, 55)) #DM: we select July as we found that it is the warmest month
 TMAX_EBBA2<-calc(TMAX_EBBA2, fun=mean)
 
 TMAX_EBBA3<-raster::subset(`2m_temperature_EBBA3`, c(7, 19, 31, 43, 55))
@@ -160,18 +177,18 @@ TMAX_EBBA3<-calc(TMAX_EBBA3, fun=mean)
 
 
 
-##Mean temperature in the coldest month (we found the coldest month at the bottom of the script)
-TMIN_EBBA2<-raster::subset(`2m_temperature_EBBA2`, c(1, 13, 25, 37, 49))
+##Mean temperature in the coldest month
+TMIN_EBBA2<-raster::subset(`2m_temperature_EBBA2`, c(1, 13, 25, 37, 49)) #DM: we select January as we found that it is the warmest month
 TMIN_EBBA2<-calc(TMIN_EBBA2, fun=mean)
 
 TMIN_EBBA3<-raster::subset(`2m_temperature_EBBA3`, c(1, 13, 25, 37, 49))
 TMIN_EBBA3<-calc(TMIN_EBBA3, fun=mean)
 
-##Total annual precipitation: unit is m/day, so we have to *1000*Ndaysmonth  https://confluence.ecmwf.int/pages/viewpage.action?pageId=197702790 
+##Total annual precipitation. DM: unit is m/day, so we have to *1000*Ndaysmonth 
 #https://confluence.ecmwf.int/pages/viewpage.action?pageId=197702790
 
 # EBBA2
-#First, calculate the number of days per month between 2018 and 2022
+#First, calculate the number of days per month between 2013 and 2017
 start_year <- 2013
 end_year <- 2017
 
@@ -180,25 +197,18 @@ isLeapYear <- function(year) {
   year %% 4 == 0 & (year %% 100 != 0 | year %% 400 == 0)
 }
 
-# Initialize an empty vector to store the number of days per month
 days_per_month <- c()
-
-# Loop through each year and month to calculate the number of days
 for (year in start_year:end_year) {
   for (month in 1:12) {
-    # Check if it is a leap year
     if (month == 2 && isLeapYear(year)) {
       days_in_month <- 29
     } else {
       days_in_month <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)[month]
     }
-    # Append the number of days to the vector
     days_per_month <- c(days_per_month, days_in_month)
   }
 }
 
-
-#Then, change units in the map
 for (i in seq_along(days_per_month)) {
   layer <- total_precipitation_EBBA2[[i]]
   days <- days_per_month[i]
@@ -207,13 +217,11 @@ for (i in seq_along(days_per_month)) {
   total_precipitation_EBBA2[[i]] <- layer * days
 }
 
-#And summarise, firts we will obtain the total accumulated precipitation in the period, if we divide, we obtain the precipitation/year
+#DM: summarise, sum to obtain total accumulated precipitation in the period, if we divide the number of years, we obtain the precipitation/year. To have mm, we must *1000
 PAnnual_EBBA2<-calc(total_precipitation_EBBA2, fun=function(x) sum(x)/5*1000)
 
 
-
 # EBBA3
-
 #First, calculate the number of days per month between 2018 and 2022
 start_year <- 2018
 end_year <- 2022
@@ -222,26 +230,18 @@ end_year <- 2022
 isLeapYear <- function(year) {
   year %% 4 == 0 & (year %% 100 != 0 | year %% 400 == 0)
 }
-
-# Initialize an empty vector to store the number of days per month
 days_per_month <- c()
-
-# Loop through each year and month to calculate the number of days
 for (year in start_year:end_year) {
   for (month in 1:12) {
-    # Check if it is a leap year
     if (month == 2 && isLeapYear(year)) {
       days_in_month <- 29
     } else {
       days_in_month <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)[month]
     }
-    # Append the number of days to the vector
     days_per_month <- c(days_per_month, days_in_month)
   }
 }
 
-
-#Then, change units in the map
 for (i in seq_along(days_per_month)) {
   layer <- total_precipitation_EBBA3[[i]]
   days <- days_per_month[i]
@@ -249,8 +249,7 @@ for (i in seq_along(days_per_month)) {
   # Multiply each pixel value by the number of days. Now it is m for month
   total_precipitation_EBBA3[[i]] <- layer * days
 }
-
-#And summarise, firts we will obtain the total accumulated precipitation in the period, if we divide, we obtain the precipitation/year
+#DM: summarise, sum to obtain total accumulated precipitation in the period, if we divide the number of years, we obtain the precipitation/year. To have mm, we must *1000
 PAnnual_EBBA3<-calc(total_precipitation_EBBA3, fun=function(x) sum(x)/5*1000)
 
 
@@ -318,7 +317,7 @@ fun_centroid_rasterize_clim<- function(x) {
   
 }
 
-### Apply function to nested EBBA2 and EBBA3 pred lists (10 min for Catalunya)
+### Apply function to nested EBBA2 and EBBA3 pred lists
 clim_EBBA2_r <- pblapply(clim_EBBA2_r, fun_centroid_rasterize_clim) 
 clim_EBBA3_r <- pblapply(clim_EBBA3_r, fun_centroid_rasterize_clim) 
 
@@ -380,7 +379,6 @@ february1<-cellStats(february1, stat=mean)
 december1<-raster::subset(`2m_temperature_EBBA2`, c(12, 24, 36, 48, 60))
 december1<-calc(december1, fun=mean)
 december1<-cellStats(december1, stat=mean)
-
 
 #EBBA3
 january2<-raster::subset(`2m_temperature_EBBA3`, c(1, 13, 25, 37, 49))
