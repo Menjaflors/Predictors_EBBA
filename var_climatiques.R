@@ -6,6 +6,8 @@ library(ecmwfr)
 library(raster)
 library(rgdal)
 library(tis)
+library(dplyr)
+library(sf)
 
 dir<-"C:/Users/david.munoz/OneDrive - ctfc.cat/predictors_ebalife/"
 proj_final<-CRS("EPSG:3035")
@@ -69,28 +71,50 @@ for (i in variable_list) {
 ### Modifications of each variable----
 
 ##Evapotranspiration in breeding period (APR-JUL)
-ETP_EBBA2<-raster::subset(evaporation_from_vegetation_transpiration_EBBA2, c(4:7, 16:19, 28:31, 40:43, 52:55)) #select apr-jul from year 1 to 5
-ETP_EBBA2<-calc(ETP_EBBA2, fun = function (x) sum(x)*1000/5) #Maybe we can do a sum here?
+EVAPObree_EBBA2<-raster::subset(total_evaporation_EBBA2, c(4:7, 16:19, 28:31, 40:43, 52:55)) #select apr-jul from year 1 to 5
+EVAPObree_EBBA2<-calc(EVAPObree_EBBA2, fun = function (x) sum(x)/5) #UNITS ARE NOT CORRECT
 
-ETP_EBBA3<-raster::subset(evaporation_from_vegetation_transpiration_EBBA3, c(4:7, 16:19, 28:31, 40:43, 52:55)) #select apr-jul from year 1 to 5
-ETP_EBBA3<-calc(ETP_EBBA3, fun = function(x) sum(x)*1000/5) #Maybe we can do a sum here?
+EVAPObree_EBBA3<-raster::subset(total_evaporation_EBBA3, c(4:7, 16:19, 28:31, 40:43, 52:55)) #select apr-jul from year 1 to 5
+EVAPObree_EBBA3<-calc(EVAPObree_EBBA3, fun = function(x) sum(x)/5) 
+
+
 
 ##Mean annual temperature
-MAT_EBBA2<-calc(`2m_temperature_EBBA2`, fun=mean)
+Tannual_EBBA2<-calc(`2m_temperature_EBBA2`, fun=mean)
 
-MAT_EBBA3<-calc(`2m_temperature_EBBA3`, fun=mean)
+Tannual_EBBA3<-calc(`2m_temperature_EBBA3`, fun=mean)
+
+
 
 ##Mean temperature in breeding period (APR-JUL)
-MATBP_EBBA2<-raster::subset(`2m_temperature_EBBA2`, c(4:7, 16:19, 28:31, 40:43, 52:55))
-MATBP_EBBA2<-calc(MATBP_EBBA2, fun=mean)
+TBreed_EBBA2<-raster::subset(`2m_temperature_EBBA2`, c(4:7, 16:19, 28:31, 40:43, 52:55))
+TBreed_EBBA2<-calc(TBreed_EBBA2, fun=mean)
 
-MATBP_EBBA3<-raster::subset(`2m_temperature_EBBA3`, c(4:7, 16:19, 28:31, 40:43, 52:55))
-MATBP_EBBA3<-calc(MATBP_EBBA3, fun=mean)
+TBreed_EBBA3<-raster::subset(`2m_temperature_EBBA3`, c(4:7, 16:19, 28:31, 40:43, 52:55))
+TBreed_EBBA3<-calc(TBreed_EBBA3, fun=mean)
+
+
+
+##Mean temperature in the warmest month (we found the warmest month at the bottom of the script)
+TMAX_EBBA2<-raster::subset(`2m_temperature_EBBA2`, c(7, 19, 31, 43, 55))
+TMAX_EBBA2<-calc(TMAX_EBBA2, fun=mean)
+
+TMAX_EBBA3<-raster::subset(`2m_temperature_EBBA3`, c(7, 19, 31, 43, 55))
+TMAX_EBBA3<-calc(TMAX_EBBA3, fun=mean)
+
+
+
+##Mean temperature in the coldest month (we found the coldest month at the bottom of the script)
+TMIN_EBBA2<-raster::subset(`2m_temperature_EBBA2`, c(1, 13, 25, 37, 49))
+TMIN_EBBA2<-calc(TMIN_EBBA2, fun=mean)
+
+TMIN_EBBA3<-raster::subset(`2m_temperature_EBBA3`, c(1, 13, 25, 37, 49))
+TMIN_EBBA3<-calc(TMIN_EBBA3, fun=mean)
 
 ##Total annual precipitation: unit is m/day, so we have to *1000*Ndaysmonth  https://confluence.ecmwf.int/pages/viewpage.action?pageId=197702790 
+#https://confluence.ecmwf.int/pages/viewpage.action?pageId=197702790
 
-# EBBA2----
-
+# EBBA2
 #First, calculate the number of days per month between 2018 and 2022
 start_year <- 2013
 end_year <- 2017
@@ -123,14 +147,16 @@ for (i in seq_along(days_per_month)) {
   layer <- total_precipitation_EBBA2[[i]]
   days <- days_per_month[i]
   
-  # Multiply each pixel value by the number of days and 1000 (m to mm). Now it is l/m2 for month
-  total_precipitation_EBBA2[[i]] <- layer * days * 1000
+  # Multiply each pixel value by the number of days to obtain m/month
+  total_precipitation_EBBA2[[i]] <- layer * days
 }
 
 #And summarise, firts we will obtain the total accumulated precipitation in the period, if we divide, we obtain the precipitation/year
-TAP_EBBA2<-calc(total_precipitation_EBBA2, fun=function(x) sum(x)/5)
+PAnnual_EBBA2<-calc(total_precipitation_EBBA2, fun=function(x) sum(x)/5)
 
-# EBBA3 ----
+
+
+# EBBA3
 
 #First, calculate the number of days per month between 2018 and 2022
 start_year <- 2018
@@ -199,6 +225,68 @@ Rad_surf_EBBA2<-calc(surface_net_solar_radiation_EBBA2, fun=mean)
 Rad_surf_EBBA3<-calc(surface_net_solar_radiation_EBBA3, fun=mean)
 
 
+##MASK, CROP, ETC. 
+variable_list<-c("EVAPObree", "Tannual", "TBreed", "TMAX", "TMIN", "PAnnual", "PBreed","Snow_days","Rad_surf")
+variable_list<-c("EVAPObree_EBBA2", "EVAPObree_EBBA3", "Tannual_EBBA2","Tannual_EBBA3", "TBreed_EBBA2", "TBreed_EBBA3",
+                 "TMAX_EBBA2","TMAX_EBBA3", "TMIN_EBBA2", "TMIN_EBBA3", "PAnnual_EBBA2", "PAnnual_EBBA3", 
+                 "PBreed_EBBA2", "PBreed_EBBA3", "Snow_days_EBBA2", "Snow_days_EBBA3", "Rad_surf_EBBA2", "Rad_surf_EBBA3")
+
+## Crop the raster by extent
+e <- extent(c(-36, 71, 25, 84)) # G: rought extent of Europe
+
+ref_r<-raster("C:/Users/david.munoz/Downloads/wetransfer_ebba_2023-06-12_0855/EBBA/raw/grids/reference_predictors_raster/reference_predictors_raster.tif")
+
+for (i in seq_along(variable_list)) {
+  assign(variable_list[i], raster::crop(get(variable_list[i]), e))
+  centroids <- as.data.frame(xyFromCell(get(variable_list[i]), cell = 1:ncell(get(variable_list[i]))))
+  centroids$values <- values(get(variable_list[i]))
+  assign(paste0("centroids_", variable_list[i]), centroids)
+  assign(paste0("centroids_", variable_list[i]), st_as_sf(get(paste0("centroids_", variable_list[i])), coords=c('x', 'y'), crs= st_crs(TMIN_EBBA2))) # G: centroids to sf object
+  assign(paste0("centroids_", variable_list[i]), st_transform(get(paste0("centroids_", variable_list[i])), crs=st_crs(ref_r)))
+  assign(variable_list[i], raster::rasterize(st_coordinates(get(paste0("centroids_", variable_list[i]))), ref_r, field=get(paste0("centroids_", variable_list[i]))$values, fun=mean, na.rm=T))
+  # writeRaster(get(paste0(variable_list[i], "_EBBA2")), file.path(dir, 'EBBA2', variable_list[i]), "GTiff", overwrite=TRUE)
+  # writeRaster(get(paste0(variable_list[i], "_EBBA3")), file.path(dir, 'EBBA3', variable_list[i]), "GTiff", overwrite=TRUE)
+  print(i)
+}
+
+
+
+#CODI GUILLEM:
+centroids_EBBA2 <- xyFromCell(TMIN_EBBA2, cell=1:ncell(TMIN_EBBA2)) %>% as.data.frame # find centroides
+centroids_EBBA2$values <- values(TMIN_EBBA2) # G: this are the values of the raster
+centroids_EBBA2_sf <- st_as_sf(centroids_EBBA2, coords=c('x', 'y'), crs= st_crs(TMIN_EBBA2)) # G: centroids to sf object
+
+## Find value on raster centroids
+centroids_EBBA2 <- xyFromCell(popden_EBBA2, cell=1:ncell(popden_EBBA2)) %>% as.data.frame # find centroides
+centroids_EBBA2$values <- values(popden_EBBA2) # G: this are the values of the raster
+centroids_EBBA2_sf <- st_as_sf(centroids_EBBA2, coords=c('x', 'y'), crs= st_crs(popden_EBBA2)) # G: centroids to sf object
+
+centroids_EBBA3 <- xyFromCell(popden_EBBA3, cell=1:ncell(popden_EBBA3)) %>% as.data.frame # find centroides
+centroids_EBBA3$values <- values(popden_EBBA3) # G: this are the values of the raster
+centroids_EBBA3_sf <- st_as_sf(centroids_EBBA3, coords=c('x', 'y'), crs= st_crs(popden_EBBA3)) # G: centroids to sf object
+
+## Transform projection of centroids
+centroids_EBBA2_sf <- st_transform(centroids_EBBA2_sf, crs=st_crs(ref_r))
+centroids_EBBA3_sf <- st_transform(centroids_EBBA3_sf, crs=st_crs(ref_r))
+
+## Rasterize points to reference raster
+popden_EBBA2 <- rasterize(st_coordinates(centroids_EBBA2_sf), ref_r, field=centroids_EBBA2_sf$values, fun=mean, na.rm=T) # G: Introduce MEAN values to reference raster
+popden_EBBA3 <- rasterize(st_coordinates(centroids_EBBA3_sf), ref_r, field=centroids_EBBA3_sf$values, fun=mean, na.rm=T) # G: Introduce MEAN values to reference raster
+
+## Mask layer by reference raster
+popden_EBBA2 <- raster::mask(popden_EBBA2, ref_r)
+popden_EBBA3 <- raster::mask(popden_EBBA3, ref_r)
+
+
+##Export
+
+
+#EXPORT USING GUILLEM FORMULA:
+for (i in seq_along(variable_list)) {
+  writeRaster(get(paste0(variable_list[i], "_EBBA2")), file.path(dir, 'EBBA2', variable_list[i]), "GTiff", overwrite=TRUE)
+  writeRaster(get(paste0(variable_list[i], "_EBBA3")), file.path(dir, 'EBBA3', variable_list[i]), "GTiff", overwrite=TRUE)
+}
+
 
 ### Resample, mask in Europe----
 # 
@@ -210,76 +298,90 @@ Rad_surf_EBBA3<-calc(surface_net_solar_radiation_EBBA3, fun=mean)
 # 
 # kk_resample <- resample(`2m_temperature`[[1]], rasgrid10, method = "bilinear")
 # kk_resample <- raster::mask(kk_resample, rasgrid10)
+kk<-raster::disaggregate(snow_cover_EBBA2[[1]], fact=2)
 
 
+
+centroids_EBBA2 <- xyFromCell(kk, cell=1:ncell(kk)) %>% as.data.frame # find centroides
+centroids_EBBA2$values <- values(kk) # G: this are the values of the raster
+centroids_EBBA2_sf <- st_as_sf(centroids_EBBA2, coords=c('x', 'y'), crs= st_crs(kk)) # G: centroids to sf object
+
+centroids_EBBA2_sf <- st_transform(centroids_EBBA2_sf, crs=st_crs(ref_r))
+
+
+## Rasterize points to reference raster
+popden_EBBA2 <- rasterize(st_coordinates(centroids_EBBA2_sf), ref_r, field=centroids_EBBA2_sf$values, fun=mean, na.rm=T) # G: Introduce MEAN values to reference raster
+
+## Mask layer by reference raster
+popden_EBBA2 <- raster::mask(popden_EBBA2, ref_r)
+
+
+kk<-resample(TMIN_EBBA2, ref_r, method="bilinear")
+writeRaster(popden_EBBA2, "C:/Users/david.munoz/Downloads/kk_resample1.tif")
+writeRaster(snow_cover_EBBA2[[1]], "C:/Users/david.munoz/Downloads/snow_cover.tif" )
 ### Find the warmest and the coldest month: ----
-#Exploració mes més càlid
 #EBBA2
-juny1<-raster::subset(`2m_temperature_EBBA2`, c(6, 18, 30, 42, 54))
-juny1<-calc(juny1, fun=mean)
-juny1<-cellStats(juny1, stat=mean)
+june1<-raster::subset(`2m_temperature_EBBA2`, c(6, 18, 30, 42, 54))
+june1<-calc(june1, fun=mean)
+june1<-cellStats(june1, stat=mean)
 
-juliol1<-raster::subset(`2m_temperature_EBBA2`, c(7, 19, 31, 43, 55))
-juliol1<-calc(juliol1, fun=mean)
-juliol1<-cellStats(juliol1, stat=mean)
+july1<-raster::subset(`2m_temperature_EBBA2`, c(7, 19, 31, 43, 55))
+july1<-calc(july1, fun=mean)
+july1<-cellStats(july1, stat=mean)
 
-agost1<-raster::subset(`2m_temperature_EBBA2`, c(8, 20, 32, 44, 56))
-agost1<-calc(agost1, fun=mean)
-agost1<-cellStats(agost1, stat=mean)
+august1<-raster::subset(`2m_temperature_EBBA2`, c(8, 20, 32, 44, 56))
+august1<-calc(august1, fun=mean)
+august1<-cellStats(august1, stat=mean)
 
 
 #EBBA3
-juny2<-raster::subset(`2m_temperature_EBBA3`, c(6, 18, 30, 42, 54))
-juny2<-calc(juny2, fun=mean)
-juny2<-cellStats(juny2, stat=mean)
+june2<-raster::subset(`2m_temperature_EBBA3`, c(6, 18, 30, 42, 54))
+june2<-calc(june2, fun=mean)
+june2<-cellStats(june2, stat=mean)
 
-juliol2<-raster::subset(`2m_temperature_EBBA3`, c(7, 19, 31, 43, 55))
-juliol2<-calc(juliol2, fun=mean)
-juliol2<-cellStats(juliol2, stat=mean)
+july2<-raster::subset(`2m_temperature_EBBA3`, c(7, 19, 31, 43, 55))
+july2<-calc(july2, fun=mean)
+july2<-cellStats(july2, stat=mean)
 
-agost2<-raster::subset(`2m_temperature_EBBA3`, c(8, 20, 32, 44, 56))
-agost2<-calc(agost2, fun=mean)
-agost2<-cellStats(agost2, stat=mean)
+august2<-raster::subset(`2m_temperature_EBBA3`, c(8, 20, 32, 44, 56))
+august2<-calc(august2, fun=mean)
+august2<-cellStats(august2, stat=mean)
 
 #Mean
-agost<-mean(agost1, agost2)
-juliol<-mean(juliol1, juliol2)
-juny<-mean(juny1, juny2)
+august<-mean(august1, august2)
+july<-mean(july1, july2)
+june<-mean(june1, june2)
 
 
 
-
-
-##Find the coldest month: 
-#Exploració mes més fred
+#Find the coldest month: 
 #EBBA2
-gener1<-raster::subset(`2m_temperature_EBBA2`, c(1, 13, 25, 37, 49))
-gener1<-calc(gener1, fun=mean)
-gener1<-cellStats(gener1, stat=mean)
+january1<-raster::subset(`2m_temperature_EBBA2`, c(1, 13, 25, 37, 49))
+january1<-calc(january1, fun=mean)
+january1<-cellStats(january1, stat=mean)
 
-febrer1<-raster::subset(`2m_temperature_EBBA2`, c(2, 14, 26, 38, 50))
-febrer1<-calc(febrer1, fun=mean)
-febrer1<-cellStats(febrer1, stat=mean)
+february1<-raster::subset(`2m_temperature_EBBA2`, c(2, 14, 26, 38, 50))
+february1<-calc(february1, fun=mean)
+february1<-cellStats(february1, stat=mean)
 
-desembre1<-raster::subset(`2m_temperature_EBBA2`, c(12, 24, 36, 48, 60))
-desembre1<-calc(desembre1, fun=mean)
-desembre1<-cellStats(desembre1, stat=mean)
-
+december1<-raster::subset(`2m_temperature_EBBA2`, c(12, 24, 36, 48, 60))
+december1<-calc(december1, fun=mean)
+december1<-cellStats(december1, stat=mean)
 
 
 #EBBA3
-gener2<-raster::subset(`2m_temperature_EBBA3`, c(1, 13, 25, 37, 49))
-gener2<-calc(gener2, fun=mean)
-gener2<-cellStats(gener2, stat=mean)
+january2<-raster::subset(`2m_temperature_EBBA3`, c(1, 13, 25, 37, 49))
+january2<-calc(january2, fun=mean)
+january2<-cellStats(january2, stat=mean)
 
-febrer2<-raster::subset(`2m_temperature_EBBA3`, c(2, 14, 26, 38, 50))
-febrer2<-calc(febrer2, fun=mean)
-febrer2<-cellStats(febrer2, stat=mean)
+february2<-raster::subset(`2m_temperature_EBBA3`, c(2, 14, 26, 38, 50))
+february2<-calc(february2, fun=mean)
+february2<-cellStats(february2, stat=mean)
 
-desembre2<-raster::subset(`2m_temperature_EBBA3`, c(12, 24, 36, 48, 60))
-desembre2<-calc(desembre2, fun=mean)
-desembre2<-cellStats(desembre2, stat=mean)
+december2<-raster::subset(`2m_temperature_EBBA3`, c(12, 24, 36, 48, 60))
+december2<-calc(december2, fun=mean)
+december2<-cellStats(december2, stat=mean)
 
-gener<-mean(gener1, gener2)
-febrer<-mean(febrer1, febrer2)
-desembre<-mean(desembre1, desembre2)
+january<-mean(january1, january2)
+february<-mean(february1, february2)
+december<-mean(december1, december2)
