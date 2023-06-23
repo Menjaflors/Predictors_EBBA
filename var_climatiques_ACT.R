@@ -160,17 +160,17 @@ Tannual_EBBA3<-calc(`2m_temperature_EBBA3`, fun=mean)
 
 
 ##Mean temperature in breeding period (APR-JUL)
-TBreed_EBBA2<-raster::subset(`2m_temperature_EBBA2`, c(4:7, 16:19, 28:31, 40:43, 52:55))
-TBreed_EBBA2<-calc(TBreed_EBBA2, fun=mean)
+TBreed_EBBA2<-raster::subset(`2m_temperature_EBBA2`, c(4:7, 16:19, 28:31, 40:43, 52:55))  #DM: select apr-jul from year 1 to 5
+TBreed_EBBA2<-calc(TBreed_EBBA2, fun=mean) #DM: mean of the selected months
 
-TBreed_EBBA3<-raster::subset(`2m_temperature_EBBA3`, c(4:7, 16:19, 28:31, 40:43, 52:55))
+TBreed_EBBA3<-raster::subset(`2m_temperature_EBBA3`, c(4:7, 16:19, 28:31, 40:43, 52:55)) #DM: select apr-jul from year 1 to 5
 TBreed_EBBA3<-calc(TBreed_EBBA3, fun=mean)
 
 
 
 ##Mean temperature in the warmest month
 TMAX_EBBA2<-raster::subset(`2m_temperature_EBBA2`, c(7, 19, 31, 43, 55)) #DM: we select July as we found that it is the warmest month
-TMAX_EBBA2<-calc(TMAX_EBBA2, fun=mean)
+TMAX_EBBA2<-calc(TMAX_EBBA2, fun=mean) #DM: mean of the 5 July's of the EBBA 2 period
 
 TMAX_EBBA3<-raster::subset(`2m_temperature_EBBA3`, c(7, 19, 31, 43, 55))
 TMAX_EBBA3<-calc(TMAX_EBBA3, fun=mean)
@@ -179,7 +179,7 @@ TMAX_EBBA3<-calc(TMAX_EBBA3, fun=mean)
 
 ##Mean temperature in the coldest month
 TMIN_EBBA2<-raster::subset(`2m_temperature_EBBA2`, c(1, 13, 25, 37, 49)) #DM: we select January as we found that it is the warmest month
-TMIN_EBBA2<-calc(TMIN_EBBA2, fun=mean)
+TMIN_EBBA2<-calc(TMIN_EBBA2, fun=mean) #DM: mean of the 5 January's of the EBBA 2 period
 
 TMIN_EBBA3<-raster::subset(`2m_temperature_EBBA3`, c(1, 13, 25, 37, 49))
 TMIN_EBBA3<-calc(TMIN_EBBA3, fun=mean)
