@@ -12,6 +12,10 @@ library(sf)
 dir<-"C:/Users/david.munoz/OneDrive - ctfc.cat/predictors_ebalife/"
 proj_final<-CRS("EPSG:3035")
 
+
+ref_r<-raster("C:/Users/david.munoz/Downloads/wetransfer_ebba_2023-06-12_0855/EBBA/raw/grids/reference_predictors_raster/reference_predictors_raster.tif")
+
+
 ### Download and import variables. It is necessary to have an account in ECMWF. ----
 #Then, download the package ecmwfr, and run the following function:
 
@@ -225,16 +229,15 @@ Rad_surf_EBBA2<-calc(surface_net_solar_radiation_EBBA2, fun=mean)
 Rad_surf_EBBA3<-calc(surface_net_solar_radiation_EBBA3, fun=mean)
 
 
+
 ##MASK, CROP, ETC. 
-variable_list<-c("EVAPObree", "Tannual", "TBreed", "TMAX", "TMIN", "PAnnual", "PBreed","Snow_days","Rad_surf")
+e <- extent(c(-36, 71, 25, 84)) # G: rought extent of Europe
+#variable_list<-c("EVAPObree", "Tannual", "TBreed", "TMAX", "TMIN", "PAnnual", "PBreed","Snow_days","Rad_surf")
 variable_list<-c("EVAPObree_EBBA2", "EVAPObree_EBBA3", "Tannual_EBBA2","Tannual_EBBA3", "TBreed_EBBA2", "TBreed_EBBA3",
                  "TMAX_EBBA2","TMAX_EBBA3", "TMIN_EBBA2", "TMIN_EBBA3", "PAnnual_EBBA2", "PAnnual_EBBA3", 
                  "PBreed_EBBA2", "PBreed_EBBA3", "Snow_days_EBBA2", "Snow_days_EBBA3", "Rad_surf_EBBA2", "Rad_surf_EBBA3")
 
 ## Crop the raster by extent
-e <- extent(c(-36, 71, 25, 84)) # G: rought extent of Europe
-
-ref_r<-raster("C:/Users/david.munoz/Downloads/wetransfer_ebba_2023-06-12_0855/EBBA/raw/grids/reference_predictors_raster/reference_predictors_raster.tif")
 
 for (i in seq_along(variable_list)) {
   assign(variable_list[i], raster::crop(get(variable_list[i]), e))
@@ -249,7 +252,7 @@ for (i in seq_along(variable_list)) {
   print(i)
 }
 
-
+writeRaster(TMIN_EBBA3, "C:/Users/david.munoz/OneDrive - ctfc.cat/predictors_ebalife/proves/centroides.tif" )
 
 #CODI GUILLEM:
 centroids_EBBA2 <- xyFromCell(TMIN_EBBA2, cell=1:ncell(TMIN_EBBA2)) %>% as.data.frame # find centroides
@@ -302,9 +305,25 @@ kk<-raster::disaggregate(snow_cover_EBBA2[[1]], fact=2)
 
 
 
-centroids_EBBA2 <- xyFromCell(kk, cell=1:ncell(kk)) %>% as.data.frame # find centroides
-centroids_EBBA2$values <- values(kk) # G: this are the values of the raster
-centroids_EBBA2_sf <- st_as_sf(centroids_EBBA2, coords=c('x', 'y'), crs= st_crs(kk)) # G: centroids to sf object
+
+raster_to_adapt<-snow_cover_EBBA2[[1]]
+#Funcions project_raster
+raster_matched <- projectRaster(raster_to_adapt, ref_r, method = "ngb")
+reprojected_raster <- projectRaster(raster_matched, ref_r, method = "bilinear", res = ref_r)
+writeRaster(reprojected_raster,"C:/Users/david.munoz/Downloads/project_Raster.tif" )
+
+#Funcions resample
+raster_matched_crs <- projectRaster(raster_to_adapt, ref_r)
+reprojected_raster <- resample(raster_matched_crs, ref_r, method = "bilinear")
+writeRaster(reprojected_raster,"C:/Users/david.munoz/Downloads/resample.tif" )
+
+
+kk<-projectRaster(snow_cover_EBBA2[[1]], crs = crs(ref_r), method = "bilinear", res = ref_r)
+kk<-resample(snow_cover_EBBA2[[1]], ref_r, method="bilinear")
+
+centroids_EBBA2 <- xyFromCell(snow_cover_EBBA2[[1]], cell=1:ncell(snow_cover_EBBA2[[1]])) %>% as.data.frame # find centroides
+centroids_EBBA2$values <- values(snow_cover_EBBA2[[1]]) # G: this are the values of the raster
+centroids_EBBA2_sf <- st_as_sf(centroids_EBBA2, coords=c('x', 'y'), crs= st_crs(snow_cover_EBBA2[[1]])) # G: centroids to sf object
 
 centroids_EBBA2_sf <- st_transform(centroids_EBBA2_sf, crs=st_crs(ref_r))
 
@@ -316,8 +335,8 @@ popden_EBBA2 <- rasterize(st_coordinates(centroids_EBBA2_sf), ref_r, field=centr
 popden_EBBA2 <- raster::mask(popden_EBBA2, ref_r)
 
 
-kk<-resample(TMIN_EBBA2, ref_r, method="bilinear")
-writeRaster(popden_EBBA2, "C:/Users/david.munoz/Downloads/kk_resample1.tif")
+kk<-resample(snow_cover_EBBA2[[1]], ref_r, method="bilinear")
+writeRaster(popden_EBBA2, "C:/Users/david.munoz/Downloads/centroids_not_disagreggate.tif")
 writeRaster(snow_cover_EBBA2[[1]], "C:/Users/david.munoz/Downloads/snow_cover.tif" )
 ### Find the warmest and the coldest month: ----
 #EBBA2
