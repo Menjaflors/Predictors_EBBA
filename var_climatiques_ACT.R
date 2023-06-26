@@ -135,28 +135,28 @@ for (i in variable_list) {
 #DM: If you see the following error: Warning: Inside GRIB2Inventory, Message # 61; ERROR: Ran out of file reading SECT0, do not worry. It works properly.
 
 ##Evapotranspiration in breeding period (APR-JUL)
-ETR<-raster::subset(total_evaporation_EBBA2, c(4:7, 16:19, 28:31, 40:43, 52:55)) #select apr-jul from year 1 to 5
-ETR<-calc(ETR, fun = function (x) sum(x)/5*1000) #UNITS ARE NOT CORRECT
+ETR_EBBA2<-raster::subset(total_evaporation_EBBA2, c(4:7, 16:19, 28:31, 40:43, 52:55)) #select apr-jul from year 1 to 5
+ETR_EBBA2<-calc(ETR_EBBA2, fun = function (x) sum(x)/5*1000) #UNITS ARE NOT CORRECT
 
-ETP<-raster::subset(potential_evaporation_EBBA2, c(4:7, 16:19, 28:31, 40:43, 52:55)) #select apr-jul from year 1 to 5
-ETP<-calc(ETP, fun = function (x) sum(x)/5*1000) #UNITS ARE NOT CORRECT
+ETP_EBBA2<-raster::subset(potential_evaporation_EBBA2, c(4:7, 16:19, 28:31, 40:43, 52:55)) #select apr-jul from year 1 to 5
+ETP_EBBA2<-calc(ETP_EBBA2, fun = function (x) sum(x)/5*1000) #UNITS ARE NOT CORRECT
+
+EVAPObree_EBBA2<-ETR_EBBA2/ETP_EBBA2
+
+ETR_EBBA3<-raster::subset(total_evaporation_EBBA3, c(4:7, 16:19, 28:31, 40:43, 52:55)) #select apr-jul from year 1 to 5
+ETR_EBBA3<-calc(ETR_EBBA3, fun = function (x) sum(x)/5*1000) #UNITS ARE NOT CORRECT
+
+ETP_EBBA3<-raster::subset(potential_evaporation_EBBA3, c(4:7, 16:19, 28:31, 40:43, 52:55)) #select apr-jul from year 1 to 5
+ETP_EBBA3<-calc(ETP_EBBA3, fun = function (x) sum(x)/5*1000) #UNITS ARE NOT CORRECT
+
+EVAPObree_EBBA3<-ETR_EBBA3/ETP_EBBA3
 
 
-kk<-total_evaporation_EBBA2[[1]]/potential_evaporation_EBBA2[[1]]
-
-
-EVAPObree_EBBA2<-ETR/ETP
-
-EVAPObree_EBBA3<-raster::subset(total_evaporation_EBBA3, c(4:7, 16:19, 28:31, 40:43, 52:55)) #select apr-jul from year 1 to 5
-EVAPObree_EBBA3<-calc(EVAPObree_EBBA3, fun = function(x) sum(x)/5) 
-
-writeRaster(ETP, "C:/Users/david.munoz/Downloads/EVAPOPOTENCIAL.tif")
 
 ##Mean annual temperature
 Tannual_EBBA2<-calc(`2m_temperature_EBBA2`, fun=mean)
 
 Tannual_EBBA3<-calc(`2m_temperature_EBBA3`, fun=mean)
-
 
 
 ##Mean temperature in breeding period (APR-JUL)
